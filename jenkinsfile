@@ -1,50 +1,50 @@
-pipeline {
+pipeline{
     agent any
+    tools{
+        maven 'maven'
+    }
+    options {
+        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '3')
+    }
+    environment {
+        dockerhub_cred = credentials('dockerhub_cred')
+        //aws_cred = credentials('aws-ID')
 
-    stages {
-        stage('Checkout') {
+    }
+    stages{
+        stage('Cleanup') {
             steps {
-                checkout scm
+                cleanWs()
             }
         }
-
-        stage('Build') {
-            steps {
-                sh 'javac -cp .:lib/* -d target/classes src/**/*.java'
+        stage('Checkout stage'){
+            steps{
+                checkout([$class: 'GitSCM',
+                branches: [[name: 'main']],  
+                extensions: [[$class: 'CleanCheckout']],
+                userRemoteConfigs: [[url: 'https://github.com/jadugarmjadugar/Projects-star.git']]])
             }
         }
-
-        stage('Test') {
+         stage('build') {
             steps {
-                sh 'java -cp .:lib/*:target/classes org.junit.runner.JUnitCore calc.java'
-            }
+                dir('star-agile-insurance-project'){
+                    sh 'mvn clean package'
+                }
+            }  
         }
-
-        stage('Package') {
-            steps {
-                // Package the application into a WAR file
-                sh 'jar -cvf mvn_helloworld.war -C target/classes .'
-            }
-        }
-
-        stage('Deploy to Tomcat') {
-            steps {
-                script {
-                    // Adjust the following variables based on your Tomcat setup
-                    def tomcatUrl = 'http://http://54.83.103.88:8080/'
-                    def tomcatManagerUser = 'tomcat'
-                    def tomcatManagerPassword = 's3cret'
-                    def warFileName = 'mvn_helloworld.war'
-
-                    // Deploy the WAR file to Tomcat using the manager API
-                    sh "curl -v --user ${tomcatManagerUser}:${tomcatManagerPassword} --upload-file target/${warFileName} ${tomcatUrl}/manager/text/deploy?path=/${warFileName}"
+        stage('docker'){
+            steps{
+                dir('star-agile-insurance-project'){
+                    sh 'docker build -t jadugarmjadugar/insuranceproject:1.0 .'
                 }
             }
         }
-
-        stage('Publish Test Results') {
-            steps {
-                junit 'target/surefire-reports/*.xml'
+        stage('docker push'){
+            steps{
+                dir('star-agile-insurance-project'){
+                    sh 'echo $dockerhub_cred_PSW | docker login -u $dockerhub_cred_USR --password-stdin'
+                    sh 'docker push jadugarmjadugar/insuranceproject:1.0'
+                }
             }
         }
     }
