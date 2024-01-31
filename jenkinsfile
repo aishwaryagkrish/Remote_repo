@@ -16,14 +16,14 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'java -cp .:lib/*:target/classes org.junit.runner.JUnitCore com.example.YourTestClass'
+                sh 'java -cp .:lib/*:target/classes org.junit.runner.JUnitCore calc.java'
             }
         }
 
         stage('Package') {
             steps {
                 // Package the application into a WAR file
-                sh 'jar -cvf your-application.war -C target/classes .'
+                sh 'jar -cvf mvn_helloworld.war -C target/classes .'
             }
         }
 
