@@ -1,0 +1,13 @@
+pipeline {
+    agent {
+        label 'slave1' 
+    }
+
+    stages {
+        stage('Hello World') {
+            steps {
+                echo 'Hello, World! This build is running on a Jenkins slave node.'
+            }
+        }
+    }
+}
