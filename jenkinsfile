@@ -1,15 +1,50 @@
 pipeline {
-    agent none
+    agent any
 
     stages {
-        stage('Hello World on Slave') {
-            agent {
-                label 'slave1' 
+        stage('Checkout') {
+            steps {
+                checkout scm
             }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'javac -cp .:lib/* -d target/classes src/**/*.java'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'java -cp .:lib/*:target/classes org.junit.runner.JUnitCore com.example.YourTestClass'
+            }
+        }
+
+        stage('Package') {
+            steps {
+                // Package the application into a WAR file
+                sh 'jar -cvf your-application.war -C target/classes .'
+            }
+        }
+
+        stage('Deploy to Tomcat') {
             steps {
                 script {
-                    echo 'Hello, World! This build is running on a Jenkins slave node.'
+                    // Adjust the following variables based on your Tomcat setup
+                    def tomcatUrl = 'http://http://54.83.103.88:8080/'
+                    def tomcatManagerUser = 'tomcat'
+                    def tomcatManagerPassword = 's3cret'
+                    def warFileName = 'mvn_helloworld.war'
+
+                    // Deploy the WAR file to Tomcat using the manager API
+                    sh "curl -v --user ${tomcatManagerUser}:${tomcatManagerPassword} --upload-file target/${warFileName} ${tomcatUrl}/manager/text/deploy?path=/${warFileName}"
                 }
+            }
+        }
+
+        stage('Publish Test Results') {
+            steps {
+                junit 'target/surefire-reports/*.xml'
             }
         }
     }
